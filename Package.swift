@@ -7,10 +7,12 @@ let package = Package(
     name: "SkylineLayout",
     platforms: [.macOS(.v10_14), .iOS(.v16), .tvOS(.v16), .visionOS(.v1), .macCatalyst(.v14),.watchOS(.v9)],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
-        .library(
-            name: "SkylineLayout",
-            targets: ["SkylineLayout"]),
+      // Products define the executables and libraries a package produces, making them visible to other packages.
+      .library(
+        name: "SkylineLayout",
+        targets: ["SkylineLayout"]),
+    ], dependencies: [
+      .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.

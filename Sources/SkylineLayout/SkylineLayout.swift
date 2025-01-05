@@ -2,28 +2,40 @@
 //  SkylineLayout.swift
 //  SkylineLayout
 //
-//   © Zino 2024
+//   © Nicolas Zinovieff (aka Zino) 2024
 //
 
 import SwiftUI
 
 /// Layout that packs the views starting from the top left as they come
 /// Think of newspaper-style rectangle packing
-/// WARNING: Will not work correctly if the width isn't "obvious" (set in stone or massively constrained
+/// - Warning: Will not work correctly if the width isn't "obvious" (set in stone or massively constrained)
 @available(macOS 13.0, *)
 public struct SkylineLayout : Layout {
+  /// Caching structure to avoid re-calculations
   public struct CacheData {
+    /// result of the previous run of the algorithm
     var skyline : SkylinePacking
+    /// assuming the views haven't changed order, their rectangles
     var rects : [CGRect]
   }
   
+  /// Animatable configuration for the layout
   public class SkylineConfiguration : ObservableObject {
+    /// horizontal gap between neighboring views under which the algorithm considers them having a commin border
     @Published public var minGapWidth : CGFloat = 10
+    
+    /// vertical gap between neighboring views under which the algorithm considers them having a commin border
     @Published public var minGapHeight : CGFloat = 2
+    
+    /// after a while, towers of views form, leaving "pits" where no view can ultimately go. When the width/height ration becomes extreme, the algorithm will consider this wasted space and "fill" it
     @Published public var minPitRatio : CGFloat = 0.10
     
+    /// Mandatory initializer
     public init() { }
     
+    /// Complete initializer  
+    /// See instance variable documentations for details
     public init(minGapWidth: CGFloat, minGapHeight: CGFloat, minPitRatio: CGFloat) {
       self.minGapWidth = minGapWidth
       self.minGapHeight = minGapHeight

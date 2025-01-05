@@ -91,3 +91,7 @@ Having some wriggle room as to when to fuse "similar" bits of the skyline allows
 The pit ratio threshold is slightly different: there *will* be gaps that can never be used for views (unless you have fixed sized views that are a perfect divider of the width of the window). The space "on top" of these gaps may never be used again. So, the idea is to provide a tipping point: when the pit becomes high enough (denoted by the ratio of its width over its height), it can be considered "unfillable", and written off. Its top then becomes an extension of whatever ledge is around, providing a bit more width for a new view.  
 The default value of `10%` feels a bit conservative and on some examples was upped to `20%` or even `33%`. All the more reason to provide access to these controlling variables.  
 Plus, with animations, it's just gorgeous.
+
+## Version history
+
+- 0.1.0 : initial release

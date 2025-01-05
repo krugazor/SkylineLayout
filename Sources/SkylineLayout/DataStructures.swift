@@ -2,23 +2,34 @@
 //  DataStructures.swift
 //  SkylineLayout
 //
-//   © Zino 2024
+//   © Nicolas Zinovieff (aka Zino) 2024
 //
 
 import SwiftUI
 
+/// Used for debugging messages - mostly during development. Il will probably go away at some point, but it's useful while I bang my head against edge-cases
+/// - Parameters:
+///   - message: the message to print
+///   - file: location info - file (defaults to where it is)
+///   - function: location info - function (defaults to where it is)
+///   - line: location info - line (defaults to where it is)
 public func track(_ message: String, file: String = #file, function: String = #function, line: Int = #line ) {
 #if false
   print("\(message) called from \(function) \(file):\(line)")
-  #endif
+#endif
 }
 
+/// Internal structure used to keep track of the current state of the packing algorithm
 struct SkylinePacking {
+  /// maximum allowable width for the packing of the elements
   var maxWidth : CGFloat
+  /// horizontal gap between neighboring views under which the algorithm considers them having a common border
   var minGapWidth : CGFloat = 10
+  /// vertical gap between neighboring views under which the algorithm considers them having a common border
   var minGapHeight : CGFloat = 2
+  /// after a while, towers of views form, leaving "pits" where no view can ultimately go. When the width/height ration becomes extreme, the algorithm will consider this wasted space and "fill" it
   var minPitRatio : CGFloat = 0.10
-
+  
   var currentSkyline : [(x: CGFloat, y: CGFloat, width: CGFloat)] = []
   
   /*
@@ -34,9 +45,12 @@ struct SkylinePacking {
    |
    */
   
+  /// For debugging purposes, outputs dots for filled space and spaces for empties
+  /// - Returns: a printable string
+  /// Warning: Super resource intensive, DO NOT USE unless you absolutely need to
   func printSkyline() -> String {
     var output = ""
-
+    
     let maxY = currentSkyline.max(by: { $0.y < $1.y })!.y
     for y in 0..<Int(maxY) {
       output += (0...Int(self.maxWidth)).map({
@@ -50,10 +64,13 @@ struct SkylinePacking {
       })
       output += "\n"
     }
-
+    
     return output
   }
   
+  /// Fits an incoming view into the current available space as best as it can, uptating itself in the process
+  /// - Parameter viewSize: the size of the view that should be fitted in the structure
+  /// - Returns: the view rectangle where the algorithm decided to put it
   mutating func updateSkyline(viewSize: CGSize) -> CGRect {
     if viewSize.width <= 0 || viewSize.height <= 0 { /// Weird edge case
       return CGRect.zero
@@ -65,15 +82,12 @@ struct SkylinePacking {
       return CGRect(origin: CGPoint.zero, size: viewSize)
     }
     
-    var optimized = false
-    var optimizedpit = false // DEBUG
     // we need to defragment the "base", otherwise we will never find candidates again
     // clear up the small holes (< min hole width)
     while let smallGap = currentSkyline.enumerated().filter({ $0.element.x >= viewSize.width && $0.element.width < minGapWidth }).first {
       let mergeWith = currentSkyline[smallGap.offset-1]
       currentSkyline.replaceSubrange(smallGap.offset-1...smallGap.offset, with: [(mergeWith.x, mergeWith.y, mergeWith.width+smallGap.element.width)])
       track("plugged gap")
-      optimized = true
     }
     // merge similar heights
     var currentIdx = 0
@@ -91,7 +105,6 @@ struct SkylinePacking {
         currentSkyline.replaceSubrange(currentIdx..<upToIdx, with: [(currentItem.x,currentMaxY,newWidth)])
         // currentSkyline.replaceSubrange(currentIdx..<upToIdx, with: [(currentItem.x,currentMaxY,upToItem.x + upToItem.width - currentItem.x)])
         track("plugged height")
-        optimized = true
       } else {
         currentIdx += 1
       }
@@ -100,16 +113,14 @@ struct SkylinePacking {
     if currentSkyline.count >= 3 {
       let maxHeightItem = currentSkyline.max(by: { $0.y < $1.y })!.y
       var pits : [Int] = []
-
+      
       let areas : [(offset: Int, area: CGFloat)] = currentSkyline.enumerated().map({ ($0.offset, $0.element.width / max(0.001, maxHeightItem - $0.element.y)) })
       let gaps = areas.filter({ $0.area <= minPitRatio }).map({ $0.offset })
       pits.append(contentsOf: gaps )
       if !pits.isEmpty {
-        // try? printSkyline().write(toFile: "/tmp/prevskyline.txt", atomically: true, encoding: .utf8)
         track("plugged pits at \(pits.map({ "\(Int(currentSkyline[$0].x))" }).joined(separator: ", "))")
       }
       for pit in pits.reversed() { // start at the end, otherwise all the indices are fed up
-        optimizedpit = true
         let item = currentSkyline[pit]
         if pit == 0 {
           let nextitem = currentSkyline[1]
@@ -134,13 +145,10 @@ struct SkylinePacking {
       }
       
       if !pits.isEmpty {
-        // try? printSkyline().write(toFile: "/tmp/skyline.txt", atomically: true, encoding: .utf8)
         return updateSkyline(viewSize: viewSize)
       }
     }
-
-    assert(currentSkyline.reduce(0, { $0 + $1.width }) == maxWidth)
-            
+    
     let candidates = currentSkyline.enumerated().filter({ $0.element.width >= viewSize.width })
     if candidates.isEmpty {
       // Find the biggest gap leaving a smaller hole
@@ -176,8 +184,6 @@ struct SkylinePacking {
           let remainingWidth = (currentSkyline[currentLookup].x+currentSkyline[currentLookup].width) - newRect.maxX
           if remainingWidth > 0 { replacementSkyline.append((currentSkyline[currentLookup].x+currentSkyline[currentLookup].width-remainingWidth,currentSkyline[currentLookup].y, remainingWidth)) }
           if lookup.1 > currentLookup { replacementSkyline.append(contentsOf: currentSkyline[currentLookup+1...lookup.1]) }
-          // sanity check
-          assert(cumulativeWidth == replacementSkyline.reduce(0, { $0 + $1.width }), "The widths should remain the same")
           currentSkyline.replaceSubrange(lookup.0...lookup.1, with: replacementSkyline)
           return newRect
         }
@@ -187,7 +193,7 @@ struct SkylinePacking {
       let base = currentSkyline.map({ $0.y }).max()!
       newSkyline.append((0,base,viewSize.width))
       
-      var below = currentSkyline.filter({ $0.x + $0.width > viewSize.width })
+      let below = currentSkyline.filter({ $0.x + $0.width > viewSize.width })
       for item in below {
         if item.x < viewSize.width { // partial cover
           newSkyline.append((viewSize.width,item.y,item.x+item.width-viewSize.width))

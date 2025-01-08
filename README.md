@@ -5,6 +5,7 @@ SwiftUI layout that will attempt to fit the views in the least possible space. N
 Overall, the views will be placed on a first come, first available place basis, and will try to use the best possible fit at the time, plugging unreclaimable holes as they appear (see [the details section](#Details))
 
 ![Demo](Doc/demo.gif)
+Or a more detailed demo, with examples, [here on youtube](https://youtu.be/yRYbLTTZEfs)
 
 ## TL;DR / Usage
 
